@@ -18,13 +18,12 @@ def from_date():
 
     while True:
         not_before = input('Date (YYYY-MM-DD) or Enter: ')
+        date_format = '%Y-%m-%d'
 
         if not_before == '':
-            not_before = '0000-00-00'
+            not_before = datetime(1,1,1,0,0)
             break
         else: 
-            date_format = '%Y-%m-%d'
-            
             try:
                 # formatting the date using strptime() function
                 dateObject = datetime.datetime.strptime(not_before, date_format)
@@ -35,6 +34,7 @@ def from_date():
                 print("Incorrect data format, should be YYYY-MM-DD.")
 
             else:
+                not_before = datetime.datetime.strptime(not_before, date_format)
                 break
 
     return not_before
@@ -114,7 +114,7 @@ def get_contents(feed_url, session_cookies, not_before):
         for attachment in attachments:
             parts = attachment['path'].split('/')
             day = parts[-3]
-            if parts[3] == 'api' or day < not_before:
+            if parts[3] == 'api' or datetime.datetime.strptime(day, '%Y-%m-%d') < not_before:
                 continue
             total += 1
             if not entry['base_name']:
