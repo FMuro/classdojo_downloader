@@ -21,7 +21,7 @@ def from_date():
         date_format = '%Y-%m-%d'
 
         if not_before == '':
-            not_before = datetime(1,1,1,0,0)
+            not_before = datetime(1,1,1,0,0,0,0)
             break
         else: 
             try:
@@ -101,10 +101,12 @@ def get_contents(feed_url, session_cookies, not_before):
     total = 0
     for item in items:
         data = item['contents']
+        time = item['time']
+        python_time = datetime.datetime.strptime(time,'%Y-%m-%dT%H:%M:%S.%fZ')
         entry = {
             'description': data.get('body'),
             'base_name': None,
-            'day': None,
+            'time': None,
             'attachments': [],
         }
         attachments = data.get('attachments', {})
@@ -113,13 +115,12 @@ def get_contents(feed_url, session_cookies, not_before):
 
         for attachment in attachments:
             parts = attachment['path'].split('/')
-            day = parts[-3]
-            if parts[3] == 'api' or datetime.datetime.strptime(day, '%Y-%m-%d') < not_before:
+            if parts[3] == 'api' or python_time < not_before:
                 continue
             total += 1
             if not entry['base_name']:
                 entry['base_name'] = parts[-4]
-                entry['day'] = day
+                entry['time'] = time
             entry['attachments'].append({'name': '_'.join(parts[-2:]),
                                          'url': attachment['path']})
 
@@ -134,30 +135,32 @@ def download_contents(contents, total, session_cookies):
         print('\nNo new data to download.')
     else:
         index = 0
-        highest_day = contents[0]['day']
+        highest_time = contents[0]['time']
+        python_highest_time = datetime.datetime.strptime(highest_time,'%Y-%m-%dT%H:%M:%S.%fZ')
         for entry in contents:
-            description_name = '{}_{}_description.txt'.format(entry['day'],
+            description_name = '{}_{}_description.txt'.format(entry['time'],
                                                             entry['base_name'])
             with open(os.path.join(DESTINATION, description_name), 'wt') as fd:
                 fd.write(entry['description'])
             for item in entry['attachments']:
                 index += 1
-                day = entry['day']
-                if day > highest_day:
-                    highest_day = day
+                time = entry['time']
+                python_time = datetime.datetime.strptime(time,'%Y-%m-%dT%H:%M:%S.%fZ')
+                if python_time > python_highest_time:
+                    highest_time = time
                 url = item['url']
                 filename = os.path.join(DESTINATION,
-                                        '{}_{}_{}'.format(entry['day'],
+                                        '{}_{}_{}'.format(entry['time'],
                                                         entry['base_name'],
                                                         item['name']))
                 if os.path.exists(filename):
                     continue
                 print('Downloading {}/{} on {}: {}'
-                    .format(index, total, day, item['name']))
+                    .format(index, total, time, item['name']))
                 with open(filename, 'wb') as fd:
                     resp = requests.get(url, cookies=session_cookies)
                     fd.write(resp.content)
-        print('Last day of data download: {}'.format(highest_day))
+        print('Last time of data download: {}'.format(highest_time))
         print('Done!')
 
 
