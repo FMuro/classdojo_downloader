@@ -95,7 +95,9 @@ def get_contents(feed_url, session_cookies, not_before):
         items.extend(prev_urls)
 
     # Save the JSON data for later/inspection.
-    with open(os.path.join(DESTINATION, 'data.json'), 'w') as fd:
+    data_json = os.path.join(DESTINATION, 'text_files', 'data.json')
+    os.makedirs(os.path.dirname(data_json), exist_ok=True)
+    with open(data_json, 'w+') as fd:
         fd.write(json.dumps(items, indent=4))
 
     contents = []
@@ -140,7 +142,9 @@ def download_contents(contents, total, session_cookies):
         highest_time = python_highest_time.strftime('%Y-%m-%d %H:%M:%S')
         for entry in contents:
             description_name = '{}_description.txt'.format(entry['base_name'])
-            with open(os.path.join(DESTINATION, description_name), 'wt') as fd:
+            description_full_path = os.path.join(DESTINATION, 'text_files', description_name)
+            os.makedirs(os.path.dirname(description_full_path), exist_ok=True)
+            with open(description_full_path, 'w+t') as fd:
                 fd.write(entry['description'])
             for item in entry['attachments']:
                 index += 1
@@ -149,14 +153,15 @@ def download_contents(contents, total, session_cookies):
                 if python_time > python_highest_time:
                     highest_time = time
                 url = item['url']
-                filename = os.path.join(DESTINATION,
+                filename = os.path.join(DESTINATION, 'images',
                                         '{}_{}'.format(entry['base_name'],
                                                        item['name']))
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
                 if os.path.exists(filename):
                     continue
                 print('Downloading {}/{} on {}: {}'
                     .format(index, total, time, item['name']))
-                with open(filename, 'wb') as fd:
+                with open(filename, 'w+b') as fd:
                     resp = requests.get(url, cookies=session_cookies)
                     fd.write(resp.content)
                 with exiftool.ExifTool() as et:
