@@ -22,7 +22,7 @@ def from_date():
         date_format = '%Y-%m-%d'
 
         if not_before == '':
-            not_before = datetime(1,1,1,0,0,0,0)
+            not_before = datetime.datetime(1,1,1,0,0,0,0)
             break
         else: 
             try:
