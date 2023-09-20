@@ -6,6 +6,7 @@ import os
 import tempfile
 from selenium import webdriver
 import datetime
+import exiftool
 
 FEED_URL = 'https://home.classdojo.com/api/storyFeed?includePrivate=true'
 LOGIN_URL = 'https://home.classdojo.com'
@@ -135,24 +136,22 @@ def download_contents(contents, total, session_cookies):
         print('\nNo new data to download.')
     else:
         index = 0
-        highest_time = contents[0]['time']
-        python_highest_time = datetime.datetime.strptime(highest_time,'%Y-%m-%dT%H:%M:%S.%fZ')
+        python_highest_time = datetime.datetime.strptime(contents[0]['time'],'%Y-%m-%dT%H:%M:%S.%fZ')
+        highest_time = python_highest_time.strftime('%Y-%m-%d %H:%M:%S')
         for entry in contents:
-            description_name = '{}_{}_description.txt'.format(entry['time'],
-                                                            entry['base_name'])
+            description_name = '{}_description.txt'.format(entry['base_name'])
             with open(os.path.join(DESTINATION, description_name), 'wt') as fd:
                 fd.write(entry['description'])
             for item in entry['attachments']:
                 index += 1
-                time = entry['time']
-                python_time = datetime.datetime.strptime(time,'%Y-%m-%dT%H:%M:%S.%fZ')
+                python_time = datetime.datetime.strptime(entry['time'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                time = python_time.strftime('%Y-%m-%d %H:%M:%S')
                 if python_time > python_highest_time:
                     highest_time = time
                 url = item['url']
                 filename = os.path.join(DESTINATION,
-                                        '{}_{}_{}'.format(entry['time'],
-                                                        entry['base_name'],
-                                                        item['name']))
+                                        '{}_{}'.format(entry['base_name'],
+                                                       item['name']))
                 if os.path.exists(filename):
                     continue
                 print('Downloading {}/{} on {}: {}'
@@ -160,6 +159,13 @@ def download_contents(contents, total, session_cookies):
                 with open(filename, 'wb') as fd:
                     resp = requests.get(url, cookies=session_cookies)
                     fd.write(resp.content)
+                with exiftool.ExifTool() as et:
+                    print(format(time))
+                    et.execute(
+                        '-AllDates={}'.format(time),
+                        '-overwrite_original',
+                        filename,
+                    )
         print('Last time of data download: {}'.format(highest_time))
         print('Done!')
 

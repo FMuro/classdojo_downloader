@@ -1,3 +1,6 @@
+# temporary folders
+tmp*/
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
